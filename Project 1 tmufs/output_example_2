@@ -1,0 +1,65 @@
+TMUFS HEADER
+----------------------------------------
+Magic Number: 1234
+Number of Directory Entries: 6
+Byte Offset of Data Area in tmufs_example_2: 272
+Checksum of the Dara Area: 172
+----------------------------------------
+File No.	File Name	Size	Start Offset	Attributes
+---------------------------------------------------------------------------
+1	file1.txt	39	272	ASCII 
+2	file2.txt	50	311	ASCII 
+3	file3.txt	453	361	ASCII 
+4	file4.bin	36	814	BINARY 
+5	file5.txt	1125	850	ASCII 
+6	file6.txt	974	1975	ASCII 
+---------------------------------------------------------------------------
+Contents of File: file1.txt
+---------------------------------------------------------------------------
+This is the content for file 1 (ASCII)
+---------------------------------------------------------------------------
+Contents of File: file2.txt
+---------------------------------------------------------------------------
+Ok and now we have the content for file 2 (ASCII)
+---------------------------------------------------------------------------
+Contents of File: file3.txt
+---------------------------------------------------------------------------
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.(ASCII)
+---------------------------------------------------------------------------
+Contents of File: file4.bin
+---------------------------------------------------------------------------
+[HEXDUMP]
+01 02 03 04 00 01 00 00 01 02 03 04 01 02 03 04 00 01 00 00 01 02 03 04 01 02 03 04 00 01 00 00 01 02 03 04 
+---------------------------------------------------------------------------
+Contents of File: file5.txt
+---------------------------------------------------------------------------
+Call me Ishmael. Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation. Whenever I find myself growing grim about the mouth; whenever it is a damp, drizzly November in my soul; whenever I find myself involuntarily pausing before coffin warehouses, and bringing up the rear of every funeral I meet; and especially whenever my hypos get such an upper hand of me, that it requires a strong moral principle to prevent me from deliberately stepping into the street, and methodically knocking people’s hats off—then, I account it high time to get to sea as soon as I can. This is my substitute for pistol and ball. With a philosophical flourish Cato throws himself upon his sword; I quietly take to the ship. There is nothing surprising in this. If they but knew it, almost all men in their degree, some time or other, cherish very nearly the same feelings towards the ocean with me. (ASCII)
+
+---------------------------------------------------------------------------
+Contents of File: file6.txt
+---------------------------------------------------------------------------
+ANTONY. O, pardon me, thou bleeding piece of earth,
+That I am meek and gentle with these butchers! 
+Thou art the ruins of the noblest man
+That ever lived in the tide of times.
+Woe to the hand that shed this costly blood!
+Over thy wounds now do I prophesy
+(Which like dumb mouths do ope their ruby lips
+To beg the voice and utterance of my tongue)
+A curse shall light upon the limbs of men;
+Domestic fury and fierce civil strife
+Shall cumber all the parts of Italy;
+Blood and destruction shall be so in use,
+And dreadful objects so familiar,
+That mothers shall but smile when they behold
+Their infants quarter'd with the hands of war;
+All pity choked with custom of fell deeds,
+And Caesar's spirit ranging for revenge,
+With Ate by his side come hot from hell,
+Shall in these confines with a monarch's voice
+Cry "Havoc!" and let slip the dogs of war,
+That this foul deed shall smell above the earth
+With carrion men, groaning for burial.
+now create directory entries (ASCII)
+
+---------------------------------------------------------------------------
