@@ -53,8 +53,8 @@ int main(int argc, char **argv){
     << "Fragments Per Group: "<< superblock.s_frags_per_group << endl
     << "Inodes Per Group: " << superblock.s_inodes_per_group << endl 
     << "Number of Block Groups: " << ceil((float)superblock.s_blocks_count / (float)superblock.s_blocks_per_group) << endl
-    << "Number of Pre-Allocate Blocks: " << max((__u8)0, superblock.s_prealloc_blocks) << endl
-    << "Number of Pre-Allocate Directory Blocks: " << max((__u8)0,superblock.s_prealloc_dir_blocks) << endl
+    << "Number of Pre-Allocate Blocks: " << (int)superblock.s_prealloc_blocks << endl // had to cast to int to get it to display the 0 hope it dosent mess up anything.
+    << "Number of Pre-Allocate Directory Blocks: " << (int)superblock.s_prealloc_dir_blocks << endl
     << "Inode size: "<< max((int)superblock.s_inode_size,(int)sizeof(struct ext2_inode)) << endl; 
 
     
@@ -85,11 +85,5 @@ int main(int argc, char **argv){
         << "Used Directories Count: " << GroupDec[j].bg_used_dirs_count << endl
         << "-------------------------------------------------------------------------------" << endl << endl;
     }
-    
-    
-
     return 0;
-
-
-
 } 
