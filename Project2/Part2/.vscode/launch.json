@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "/home/mcolvin/Documents/Security-CS4900/Project2/Part2/ext2.out",
-            "args": ["givenfiles/fspart_small_full","/"],
+            "args": ["/home/mcolvin/Documents/filesystem/my_ext2","/home/test/matt"],
             "stopAtEntry": false,
             "cwd": "/home/mcolvin/Documents/Security-CS4900/Project2/Part2",
             "environment": [],
