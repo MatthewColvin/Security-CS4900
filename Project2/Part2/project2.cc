@@ -165,10 +165,29 @@ class ext2fs {
             }
         }
         
-        if(inode.i_size > (blocksize*12)* /* # of singly indirect pointers ?*/ blocksize/32 ){ // check if we need doubly indirect pointer.
+        if(inode.i_size > (blocksize*12) + (blocksize/4)*blocksize ){ // check if we need doubly indirect pointer.
+        //if(sizeoffile >  direct pointers + (#)OfIndirectPointers)*blksize) all in bytes
+        //     int numbytesout=blocksize*12;// the size of the first 12 direct pointers in bytes 
+        //     int datablock;
+        //     int indirectblock[blocksize/4];// block is interpreted as an array of intgers each 4 bytes so blocksize/4 is the size
+        //     to_block(inode.i_block[12]); // data block full of ints that point to the actual data blocks
+        //     ext2.read((char *)indirectblock,blocksize);
 
+        //     for (int j=0; j < blocksize/4 && numbytesout < inode.i_size ; j++){ // blksize/4 = #of ints that can be represented in one block
+        //         to_block(indirectblock[j]);
 
-        }
+        //         char tmpblk[blocksize];
+        //         ext2.read(tmpblk,blocksize);
+                
+        //         for (int i = 0 ; i < blocksize && numbytesout < inode.i_size ;i++){ // output every byte of the file for whole block or untill we reach the inode size
+        //             cout << hex << tmpblk[i];
+        //             numbytesout++;
+        //             // inode memeber iblocks stores the # of blocks used to store the file but it is 512 byte blocks not blocksize
+        //         }
+        //     }
+            //***************** code is copy from above need to start by checking numbyes out and make sure it is correct that will require a bit of math.
+
+        // }
         
 
 
