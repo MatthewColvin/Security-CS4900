@@ -4,10 +4,10 @@ OUT = ext2.out
 
 
 make: $(DEPS)
-	$(CC) $(DEPS) -o  $(OUT)
+	$(CC) $(DEPS) -o  $(OUT)  -lboost_system -lboost_filesystem
 
 debug: $(DEPS)
-	$(CC) -g $(DEPS) -o $(OUT)
+	$(CC) -g $(DEPS) -o $(OUT) -lboost_system -lboost_filesystem
 
 clean: 
 	rm -f *.o
