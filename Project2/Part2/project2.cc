@@ -11,10 +11,30 @@
 #include "ext2fs.h"
 
 using namespace std;
+int blocksize=0; // issues with class segfautling
+ifstream ext2; 
+int inode_size;                     // all of these variable were falling out of scope
+ext2_super_block superblock;       // in my private member functions causeing
+vector<ext2_group_desc> GroupDec; // segfaults and stack buffer overflows
+vector <string> filenames;
+vector<ext2_dir_entry_2> entries;
 
-class ext2fs {
+ext2_inode get_inode(int inode_index){
+    unsigned int i_group = ( inode_index -1 ) / superblock.s_inodes_per_group;
+    unsigned int i_index = ( inode_index -1 ) % superblock.s_inodes_per_group;
 
-    public:
+    unsigned int i_offset =  blocksize * GroupDec[i_group].bg_inode_table + (i_index * inode_size);
+        
+    ext2_inode ext2_in;
+        
+    ext2.seekg(i_offset);
+    ext2.read((char*)&ext2_in, inode_size); 
+
+    return ext2_in;
+    }
+
+
+
 
     void dump(){
         cout << "Superblock magic number:" << hex <<superblock.s_magic << endl
@@ -31,7 +51,7 @@ class ext2fs {
         << "Number of Block Groups: " << ceil((float)superblock.s_blocks_count / (float)superblock.s_blocks_per_group) << endl
         << "Number of Pre-Allocate Blocks: " << (int)superblock.s_prealloc_blocks << endl // had to cast to int to get it to display the 0 hope it dosent mess up anything.
         << "Number of Pre-Allocate Directory Blocks: " << (int)superblock.s_prealloc_dir_blocks << endl
-        << "Inode size: "<< max((int)superblock.s_inode_size,(int)sizeof(struct ext2_inode)) << endl; 
+        << "Inode size: "<< max((int)superblock.s_inode_size,(int)sizeof(ext2_inode)) << endl; 
     
         for (int j=0; j<GroupDec.size();j++){
             cout << "Information for Block Group " << j << endl
@@ -45,9 +65,10 @@ class ext2fs {
             << "-------------------------------------------------------------------------------" << endl << endl;
         }
     }
-
-    void to_block(int block){   
-        ext2.seekg(blocksize * block);
+    
+    void to_block(size_t block){   
+        size_t byte_offset = block*blocksize; // private class member casing segfault
+        ext2.seekg(byte_offset);
     }
     int get_superblock(){
         ext2.seekg(1024);// superblock starts exactly 1024 into the ext2 filesystem
@@ -57,11 +78,11 @@ class ext2fs {
         return -1;
         }
         blocksize = 1 << (10 + superblock.s_log_block_size);
-        inode_size = max((int)superblock.s_inode_size,(int)sizeof(struct ext2_inode));
+        inode_size = max((int)superblock.s_inode_size,(int)sizeof(ext2_inode));
         return 0;
     }
-    void open_filesystem(string filesystem_name){
-        ext2.open(filesystem_name, ios::binary);
+    void open_filesystem(string& filesystem_name){
+        ext2.open(filesystem_name, ios::binary | ios::in);
         if (ext2.fail()){
             cout<< "Sorry could not open file" << endl;
         }
@@ -78,19 +99,7 @@ class ext2fs {
                 ext2.read((char*)&GroupDec[i],sizeof(GroupDec[i]));
             }
     }
-    ext2_inode get_inode(int inode_index){
-        unsigned int i_group = ( inode_index -1 ) / superblock.s_inodes_per_group;
-        unsigned int i_index = ( inode_index -1 ) % superblock.s_inodes_per_group;
 
-        unsigned int i_offset =  blocksize * GroupDec[i_group].bg_inode_table + (i_index * inode_size);
-        
-        struct ext2_inode ext2_in;
-        
-        ext2.seekg(i_offset);
-        ext2.read((char*)&ext2_in, sizeof(struct ext2_inode)); // may produce bugs inode size
-
-        return ext2_in;
-    }
 
     string get_time_of_access(ext2_inode inode){
         time_t a_rawtime = inode.i_atime;
@@ -124,28 +133,32 @@ class ext2fs {
     }
 
 
-    void display_data(ext2_inode inode){
+    void dump_inode_data(ext2_inode inode){
         vector<ext2_dir_entry_2> enteries;
         ext2_dir_entry_2* entry;
-        char block[blocksize];
-        
-        for (int j=0; j < 12 ; j++){    // for all direct pointers
+        int numbytesout=0;
+
+        for (int j=0; j < 12 && numbytesout < inode.i_size ; j++){    // for all direct pointers
             if(inode.i_block[j]!=0){     // if is is equal to zero there is nothing being pointed at
                 to_block(inode.i_block[j]);
+                
+                char block[blocksize];
                 ext2.read(block,blocksize);
                 
                 string filename;
-                for (int i =0 ; i < blocksize;i++){
+                for (int i =0 ; i < blocksize && numbytesout < inode.i_size ;i++){
                     cout << hex << block[i];
+                    numbytesout++;
                     // inode memeber iblocks stores the # of blocks used to store the file but it is 512 byte blocks not blocksize
                 }
             }
         }
+    
 
         
 
         if(inode.i_size > blocksize*12){// check if we need single indirect pointer 
-            int numbytesout=blocksize*12;// the size of the first 12 direct pointers in bytes 
+            if(numbytesout != blocksize*12){cout << " check for off by one error" << endl;};// the size of the first 12 direct pointers in bytes 
             int datablock;
             int indirectblock[blocksize/4];// block is interpreted as an array of intgers each 4 bytes so blocksize/4 is the size
             to_block(inode.i_block[12]); // data block full of ints that point to the actual data blocks
@@ -167,30 +180,73 @@ class ext2fs {
         
         if(inode.i_size > (blocksize*12) + (blocksize/4)*blocksize ){ // check if we need doubly indirect pointer.
         //if(sizeoffile >  direct pointers + (#)OfIndirectPointers)*blksize) all in bytes
-        //     int numbytesout=blocksize*12;// the size of the first 12 direct pointers in bytes 
-        //     int datablock;
-        //     int indirectblock[blocksize/4];// block is interpreted as an array of intgers each 4 bytes so blocksize/4 is the size
-        //     to_block(inode.i_block[12]); // data block full of ints that point to the actual data blocks
-        //     ext2.read((char *)indirectblock,blocksize);
+            if(blocksize*12+(blocksize/4) * blocksize!=numbytesout){cout<<"Check for off by one error" << endl;}// the size of the first 12 direct pointers in bytes 
+            int datablock;
+            int doubleindirectblock[blocksize/4];// block is interpreted as an array of intgers each 4 bytes so blocksize/4 is the size
+            to_block(inode.i_block[13]); // data block full of ints that point to the actual data blocks
+            ext2.read((char *)doubleindirectblock,blocksize);
 
-        //     for (int j=0; j < blocksize/4 && numbytesout < inode.i_size ; j++){ // blksize/4 = #of ints that can be represented in one block
-        //         to_block(indirectblock[j]);
-
-        //         char tmpblk[blocksize];
-        //         ext2.read(tmpblk,blocksize);
+            for (int j=0; j < blocksize/4 && numbytesout < inode.i_size ; j++){ // blksize/4 = #of ints that can be represented in one block
+                to_block(doubleindirectblock[j]); // every doubleindirectblock is treated as an array of ints that then point at data blocks
+                int pointerblk[blocksize];
+                ext2.read((char*)pointerblk,blocksize); // this will be an a block that points to the datablocks
                 
-        //         for (int i = 0 ; i < blocksize && numbytesout < inode.i_size ;i++){ // output every byte of the file for whole block or untill we reach the inode size
-        //             cout << hex << tmpblk[i];
-        //             numbytesout++;
-        //             // inode memeber iblocks stores the # of blocks used to store the file but it is 512 byte blocks not blocksize
-        //         }
-        //     }
-            //***************** code is copy from above need to start by checking numbyes out and make sure it is correct that will require a bit of math.
+                for(int i=0; i<blocksize/4 && numbytesout < inode.i_size; i++){
+                    to_block(pointerblk[i]);
+                    char data[blocksize];      // will hold data after 2 levels of indirection
+                    ext2.read(data,blocksize);
+                    for (int a=0;a<blocksize;a++){
+                        cout << hex << data[a]; 
+                        numbytesout++;
+                    }
 
-        // }
+
+                }
+
+            }
+
+        }
         
 
 
+    }
+
+     vector<ext2_dir_entry_2> get_directory_enteries(ext2_inode inode){
+        vector<ext2_dir_entry_2> enteries;
+        ext2_dir_entry_2* entry;
+        char block[blocksize];
+        
+        for (int j=0; j <= 12 ; j++){    // for all direct pointers
+            if(inode.i_block[j]!=0){     // if is is equal to zero there is nothing being pointed at
+                to_block(inode.i_block[j]);
+                ext2.read(block,blocksize);
+                int entrynumber=0;
+                entry = (ext2_dir_entry_2*) &block[0];
+                string filename;
+                for (int i =0 ; i < blocksize; entrynumber++){
+                    if(entry->inode != 0){   // may cause infinate loop if first entry is a 0
+                        entry = (ext2_dir_entry_2*) &block[i];
+                        filename=entry->name;
+                        filename = filename.substr(0,entry->name_len);
+                        i += entry->rec_len;
+                        //cout << filename << endl;
+                        enteries.resize(entrynumber+1);
+                        enteries[entrynumber].file_type = entry->file_type;
+                        enteries[entrynumber].inode = entry->inode;
+                        strcpy(enteries[entrynumber].name,filename.c_str());
+                        enteries[entrynumber].name_len = entry->name_len;
+                        enteries[entrynumber].rec_len = entry->rec_len;
+                    }else{
+                        entry = (ext2_dir_entry_2*) &block[i];
+                        i+=entry->rec_len;
+                    }
+                    
+                    // inode memeber iblocks stores the # of blocks used to store the file but it is 512 byte blocks not blocksize
+                }
+            }
+        }
+
+        return enteries;
     }
 
 
@@ -212,74 +268,47 @@ class ext2fs {
 
         }
         if(S_ISREG(inode.i_mode)){ // regular file 
-            cout << "Hexdump" << endl;
-            display_data(inode);
+            dump_inode_data(inode);
         }
         // more macros are difined S_ISBLK() , S_ISLNK() 
     }
 
-    vector<ext2_dir_entry_2> get_directory_enteries(ext2_inode inode){
-        vector<ext2_dir_entry_2> enteries;
-        ext2_dir_entry_2* entry;
-        char block[blocksize];
+   
+
+    void proccess_path(string& path){  
         
-        for (int j=0; j <= 12 ; j++){    // for all direct pointers
-            if(inode.i_block[j]!=0){     // if is is equal to zero there is nothing being pointed at
-                to_block(inode.i_block[j]);
-                ext2.read(block,blocksize);
-                int entrynumber=0;
-                entry = (struct ext2_dir_entry_2*) &block[0];
-                string filename;
-                for (int i =0 ; i < blocksize; entrynumber++){
-                    if(entry->inode != 0){   // may cause infinate loop if first entry is a 0
-                        entry = (struct ext2_dir_entry_2*) &block[i];
-                        filename=entry->name;
-                        filename = filename.substr(0,entry->name_len);
-                        i += entry->rec_len;
-                        //cout << filename << endl;
-                        enteries.resize(entrynumber+1);
-                        enteries[entrynumber].file_type = entry->file_type;
-                        enteries[entrynumber].inode = entry->inode;
-                        strcpy(enteries[entrynumber].name,filename.c_str());
-                        enteries[entrynumber].name_len = entry->name_len;
-                        enteries[entrynumber].rec_len = entry->rec_len;
-                    }else{
-                        entry = (struct ext2_dir_entry_2*) &block[i];
-                        i+=entry->rec_len;
-                    }
-                    
-                    // inode memeber iblocks stores the # of blocks used to store the file but it is 512 byte blocks not blocksize
-                }
-            }
-        }
+        ext2_inode inode2 = get_inode(2);
+        ext2_inode endOfPath;
+        endOfPath = inode2; // for loop below will not run if only root is provided then we want to proccess root inode
 
-        return enteries;
-    }
-
-    void proccess_path(string path){  
-        string filename;
-        vector<string> filenames;
-     
-        stringstream ss(path);
+        stringstream *ss = new stringstream(path);
         string temp;
-        while (getline(ss,temp,'/')) filenames.push_back(temp); // parce path and store into filenames
         
-        vector<ext2_dir_entry_2> entries=
-        get_directory_enteries(get_inode(2)); 
+        
+        
+        while (getline(*ss,temp,'/')) filenames.push_back(temp); // parce path and store into filenames
+        ss->str(string()); // clear the string stream it caused a segfualt
+        delete ss;
 
-        ext2_inode endOfPath = get_inode(2); // for loop below will not run if only root is provided then we want to proccess root inode
+        entries =
+            get_directory_enteries(inode2); 
 
+        static int i,j;
         bool founddir=true; // didn't actually find directory yet but loop needs to start
-
-        for (int j = 1; j < filenames.size() ; j++){
+        for (j = 1; j < filenames.size() ; j++){
+            string filename; 
             founddir = false; // now looking for the next directory 
-            for(int i=0; i < entries.size(); i++ ){   // iterate of all entries 
+            for(i=0; i < entries.size(); i++ ){   // iterate of all entries 
                 filename = entries[i].name;     // modify so it is a proper string
                 if (filenames[j] == filename){     // did we find the file?
                     if(j == filenames.size()-1){ // the whole path has been parced
                         endOfPath = get_inode(entries[i].inode);
+                        founddir=true;
+                        break;
                     }
-                    entries = get_directory_enteries(get_inode(entries[i].inode));  // get directory entries at the inode specified by the entry with propername
+                    ext2_inode next_inode ;
+                    next_inode = get_inode(entries[i].inode);
+                    entries = get_directory_enteries(next_inode);  // get directory entries at the inode specified by the entry with propername
                     founddir=true;
                 } 
             }
@@ -296,19 +325,22 @@ class ext2fs {
     
     }
 
-    private:
-
-    int blocksize,inode_size;
-    ext2_super_block superblock;
-    vector<ext2_group_desc> GroupDec;
-    ifstream ext2;
-
-};
+    void close_filesystem(){
+        ext2.close();
+    }
 
 
 
-int main(int argc, char **argv){
-    ifstream ext2;
+
+    // int inode_size;
+// int inode_size;                     // all of these variable were falling out of scope
+//ext2_super_block superblock;       // in my private member functions causeing
+//vector<ext2_group_desc> GroupDec; // segfaults and stack buffer overflows
+
+
+
+using namespace std;
+int main(int argc, char *argv[]){
     string ext2_name,path;
     switch (argc){
         case 3:
@@ -327,13 +359,14 @@ int main(int argc, char **argv){
             cin >> path;
     }
 
-    ext2fs ext2fs1;
+   
 
-    ext2fs1.open_filesystem(ext2_name);
-    if(ext2fs1.get_superblock() == -1){return -1 ;}// didnt get correct magic number
-    ext2fs1.get_group_decs();
+    open_filesystem(ext2_name);
+    if(get_superblock() == -1){return -1 ;}// didnt get correct magic number
+    get_group_decs();
+    proccess_path(path);
 
-    ext2fs1.proccess_path(path);
+    close_filesystem();
 
     return 0;
 } 

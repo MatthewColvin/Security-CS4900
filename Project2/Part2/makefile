@@ -4,10 +4,25 @@ OUT = ext2.out
 
 
 make: $(DEPS)
-	$(CC) $(DEPS) -o  $(OUT)  -lboost_system -lboost_filesystem
-
+	$(CC) $(DEPS) -o  $(OUT)  
 debug: $(DEPS)
-	$(CC) -g $(DEPS) -o $(OUT) -lboost_system -lboost_filesystem
+	$(CC) -g $(DEPS) -o $(OUT) 
+
+leak: debug
+	valgrind --leak-check=yes ./$(OUT) '/home/mcolvin/Documents/filesystem/fstest' '/matt/note'
+
+smash: debug
+	valgrind --exp-sgcheck=yes ./$(OUT) '/home/mcolvin/Documents/filesystem/fstest' '/matt/note'
+
+
+test: debug
+	./$(OUT) '/home/mcolvin/Documents/filesystem/fstest' '/matt/note' > out.txt
+
+spongebob: debug
+	./$(OUT) '/home/mcolvin/Documents/filesystem/fstest' '/stuff/spongebob.avi' >  spongebob.avi
+
+smallfile:debug
+	./$(OUT) '/home/mcolvin/Documents/filesystem/fstest' '/test2/2dirs/smallfile.txt' >  smallout.txt
 
 clean: 
 	rm -f *.o

@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "/home/mcolvin/Documents/Security-CS4900/Project2/Part2/ext2.out",
-            "args": ["/home/mcolvin/Documents/filesystem/ext2_test","/home/stuff"],
+            "args": ["/home/mcolvin/Documents/filesystem/fstest" ,"/stuff/spongebob.avi"],
             "stopAtEntry": false,
             "cwd": "/home/mcolvin/Documents/Security-CS4900/Project2/Part2",
             "environment": [],

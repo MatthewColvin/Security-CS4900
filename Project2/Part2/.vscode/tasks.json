@@ -9,6 +9,7 @@
         "project2.cc",
         "-o",
         "ext2.out"
+     
       ],
       "options": {
         "cwd": "/home/mcolvin/Documents/Security-CS4900/Project2/Part2"
