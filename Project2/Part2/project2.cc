@@ -251,7 +251,7 @@ ext2_inode get_inode(int inode_index){
 
 
     void display_info(ext2_inode inode){
-               
+        
         if (S_ISDIR(inode.i_mode)){ // inode is a directoy imitate ls -l output 
             vector<ext2_dir_entry_2> entries =
             get_directory_enteries(inode);

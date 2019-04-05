@@ -1,0 +1,4 @@
+# folder used for Vscode Configuration
+**/.vscode
+# no executabels in the repo
+**/*.out
